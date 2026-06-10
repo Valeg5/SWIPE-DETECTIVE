@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swipe Detective - Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/browser.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script>
+        // ============================================================
+        // DYNAMIC GAME SCALER - Εγγυάται ταυτόσημη εμφάνιση παντού!
+        // Design space: 2560x1440 (= 1920x1080 / 0.75, η φυσική αναλογία)
+        // ============================================================
+        window.gameScale = 0.75;
+        function fitGameToScreen() {
+            var wrapper = document.getElementById('zoom-wrapper');
+            if (!wrapper) return;
+            var DESIGN_W = 2560;
+            var DESIGN_H = 1440;
+            var scaleX = window.innerWidth  / DESIGN_W;
+            var scaleY = window.innerHeight / DESIGN_H;
+            window.gameScale = Math.min(scaleX, scaleY);
+            var scaledW = DESIGN_W * window.gameScale;
+            var scaledH = DESIGN_H * window.gameScale;
+            var offX = Math.max(0, (window.innerWidth  - scaledW) / 2);
+            var offY = Math.max(0, (window.innerHeight - scaledH) / 2);
+            wrapper.style.transform = 'scale(' + window.gameScale + ')';
+            wrapper.style.left = offX + 'px';
+            wrapper.style.top  = offY + 'px';
+        }
+        window.addEventListener('resize', fitGameToScreen);
+        document.addEventListener('DOMContentLoaded', fitGameToScreen);
+    </script>
+</head>
+<body>
+    <!-- Background Ambient Music -->
+    <audio id="bg-ambient-music" src="music/street_ambience_music.mp3" loop autoplay></audio>
+
+    <div id="zoom-wrapper" style="width: 2560px; height: 1440px; transform-origin: 0 0; position: absolute; top: 0; left: 0; overflow: hidden;">
+    <!-- ΚΟΥΜΠΙ RESTART ΠΟΥ ΕΜΦΑΝΙΖΕΤΑΙ ΣΤΟΥΣ ΙΟΥΣ -->
+    <button id="hard-restart-btn" class="hard-restart-btn" onclick="hardRestartSystem()">🔄 RESTART SYSTEM</button>
+
+    <div class="workspace-bg" id="bg">
+        <div class="os-interface" id="os">
+            
+            <div class="desktop-icon" id="detective-icon" style="display: none; position: absolute; top: 15px; right: 170px;" onclick="openApp('Detective')">
+                <div class="icon-img"><img src="img/detective_exe.png" alt="Detective" class="custom-icon"></div>
+                <div class="icon-text" style="background-color: #8b0000;">Detective.exe</div>
+            </div>
+
+            <div class="desktop-icon" onclick="openApp('Mail')">
+                <div class="icon-img"><img src="img/email.png" alt="Mail" class="custom-icon"></div>
+                <div class="icon-text">Mail</div>
+            </div>
+
+            <div class="desktop-icon" onclick="openApp('InstaLife')">
+                <div class="icon-img"><img src="img/insta_life.png" alt="InstaLife" class="custom-icon" style="width: 65%; height: 65%;"></div>
+                <div class="icon-text">InstaLife</div>
+            </div>
+
+            <div class="desktop-icon" onclick="if(typeof openBrowser === 'function') openBrowser(); else openApp('Internet');">
+                <div class="icon-img"><img src="img/internet.png" alt="Internet" class="custom-icon"></div>
+                <div class="icon-text">Internet</div>
+            </div>
+
+            <div class="desktop-icon" id="snake-desktop-icon" style="display: none; flex-direction: column; align-items: center;" onclick="openApp('Snake')">
+                <div class="icon-img" style="font-size: 32px; background: rgba(0,0,0,0.5); border-radius: 10px; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center;">🐍</div>
+                <div class="icon-text">Φιδάκι</div>
+            </div>
+
+
+            <div class="retro-window" id="snake-window" style="display: none; width: 420px; padding: 0; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; flex-direction: column; background-color: #222; border: 2px solid #555;">
+                <div class="window-header" id="snake-header" style="background-color: #4CAF50; height: 22px; padding: 2px 5px; display: flex; justify-content: space-between; cursor: move;">
+                    <span style="color: white; font-weight: bold; font-family: 'Press Start 2P', monospace; font-size: 10px; padding-top: 3px;">🐍 Snake Game</span>
+                    <button class="win-btn" onclick="closeAppWindow('Snake')" style="background-color: #c93b3b; color: white;">X</button>
+                </div>
+                <div style="padding: 10px; text-align: center; color: white; font-family: 'Press Start 2P', monospace; font-size: 12px;">
+                    Σκορ: <span id="snake-score">0</span>
+                </div>
+                <div style="background-color: black; margin: 0 auto 10px auto; width: 400px; height: 400px; position: relative;">
+                    <canvas id="snake-game-canvas" width="400" height="400" style="display: block;"></canvas>
+                    <div id="snake-game-over" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); flex-direction: column; justify-content: center; align-items: center; color: white; font-family: 'Press Start 2P', monospace;">
+                        <h2 style="color: #ff3333; margin-bottom: 20px;">GAME OVER</h2>
+                        <button onclick="if(typeof initSnakeGame === 'function') initSnakeGame()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; font-family: 'Press Start 2P', monospace; cursor: pointer;">PLAY AGAIN</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="retro-window" id="install-window" style="display: none; width: 350px;">
+                <div class="window-header"><span><span style="margin-right: 5px;">💿</span> SETUP - DETECTIVE.EXE</span></div>
+                <div class="window-body">
+                    <p style="margin-bottom: 5px; font-size: 20px;">Copying files...</p>
+                    <p style="margin-bottom: 15px; font-size: 14px; color: #444;">C:\SYSTEM32\DETECTIVE_CORE.DLL</p>
+                    <div class="progress-bar-container"><div class="progress-bar-fill" id="install-progress"></div></div>
+                </div>
+            </div>
+            
+            <div class="video-call-window" id="app-window" >
+                <div class="video-call-header" id="detective-header">
+                    <span><span style="color: #ff3333; animation: blink 1.5s infinite;">●</span> SECURE LINE: HEADQUARTERS</span>
+                    <button class="close-btn" onclick="event.stopPropagation(); tryCloseDetective()">X</button>
+                </div>
+                <div class="video-call-body" id="detective-call-body" onclick="nextDialogue()">
+                    <div class="video-feed">
+                        <img src="img/MAIN_DETECTIVE.png" alt="Head Detective" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="dialogue-box">
+                        <p id="detective-dialogue" class="dialogue-text"></p>
+                        <span id="click-prompt" class="dialogue-prompt">[ΚΛΙΚ]</span>
+                    </div>
+                </div>
+                <!-- PHONE CHOICE UI (Level 4 mini-game) -->
+                <div id="phone-choice-ui" style="display:none; flex-direction:column; gap:10px; padding: 0 20px 14px 20px;">
+                    <div style="display:flex; flex-direction:column; gap:8px; align-items: flex-end;">
+                        <button id="btn-real-phone" onclick="event.stopPropagation(); handlePhoneChoice('real')"
+                            style="background:none; border:none; color:#f2a65a; font-family:'VT323',monospace; font-size:26px; cursor:pointer; font-style:italic; padding:0; text-align:right; transition: color 0.2s, transform 0.2s; letter-spacing: 1px; text-shadow: 1px 1px 2px #000;"
+                            onmouseover="this.style.color='#ffffff'; this.style.transform='scale(1.05) translateX(-5px)';" onmouseout="this.style.color='#f2a65a'; this.style.transform='scale(1) translateX(0)';">
+                            697-676767
+                        </button>
+                        <button id="btn-fake-phone" onclick="event.stopPropagation(); handlePhoneChoice('fake')"
+                            style="background:none; border:none; color:#f2a65a; font-family:'VT323',monospace; font-size:26px; cursor:pointer; font-style:italic; padding:0; text-align:right; transition: color 0.2s, transform 0.2s; letter-spacing: 1px; text-shadow: 1px 1px 2px #000;"
+                            onmouseover="this.style.color='#ffffff'; this.style.transform='scale(1.05) translateX(-5px)';" onmouseout="this.style.color='#f2a65a'; this.style.transform='scale(1) translateX(0)';">
+                            694-334476
+                        </button>
+                    </div>
+                    <!-- Timer bar -->
+                    <div style="width:100%; height:8px; background:#333; border-radius:4px; overflow:hidden; margin-top: 5px;">
+                        <div id="phone-timer-bar" style="height:100%; width:100%; background:#888; border-radius:4px; transition: width linear;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIL WINDOW -->
+            <div class="retro-window" id="mail-window" style="display: none; width: 750px; padding: 0; left: 90%;">
+                <div class="window-header" id="mail-header" style="background-color: #5d68b9; height: 22px; padding: 2px 5px;">
+                    <span></span>
+                    <div class="window-controls">
+                        <button class="win-btn" onclick="closeAppWindow('Mail')" style="background-color: #c93b3b; color: white;">X</button>
+                    </div>
+                </div>
+                
+                <div class="mail-header-red">
+                    <span style="font-size: 24px;">✉ MAIL</span>
+                </div>
+                
+                <!-- ΛΙΣΤΑ EMAIL -->
+                <div id="mail-inbox-view" class="mail-table-container">
+                    <table class="mail-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">SENDER</th>
+                                <th style="width: 55%;">SUBJECT</th>
+                                <th style="width: 15%;">TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mail-list">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ΟΘΟΝΗ ΑΝΑΓΝΩΣΗΣ EMAIL (ΜΕ SWIPE) -->
+                <div id="mail-reader-view" style="display: none;">
+                    
+                    <!-- Αλλαγή: Βγάλαμε τα βελάκια, το animation μιλάει από μόνο του! -->
+                    <div id="swipe-bg-red" class="swipe-bg">ΑΠΑΤΗ</div>
+                    <div id="swipe-bg-green" class="swipe-bg">ΑΣΦΑΛΕΣ</div>
+
+                    <div id="swipe-card" class="swipe-card">
+                        <div class="reader-header">
+                            <div id="reader-sender" class="reader-sender"></div>
+                            <div id="reader-subject" class="reader-subject"></div>
+                        </div>
+                        
+                        <div id="reader-body" class="reader-body"></div>
+                        
+                        <div class="reader-footer">
+                            <button class="back-btn" onclick="backToInbox()">⬅ ΕΠΙΣΤΡΟΦΗ</button>
+                            <span style="font-family: monospace; color: #888; font-size: 16px;">(Πιάσε την κάρτα και σύρε Αριστερά ή Δεξιά)</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- EMAIL POPUP WINDOW ΓΙΑ ΑΣΦΑΛΗ LINKS -->
+            <div class="retro-window" id="email-popup-window" style="display: none; width: 600px; padding: 0; top: 3%; left: 15%; z-index: 100;">
+                <div class="window-header" id="email-popup-header" style="background-color: #333; height: 22px; padding: 2px 5px;">
+                    <span id="email-popup-title">🌐 Web Browser</span>
+                    <div class="window-controls">
+                        <button class="win-btn" onclick="document.getElementById('email-popup-window').style.display = 'none'" style="background-color: #c93b3b; color: white;">X</button>
+                    </div>
+                </div>
+                <div id="email-popup-content" style="height: 350px; background-color: #f0f0f0; overflow-y: auto; padding: 15px; font-family: 'VT323', monospace; color: black; letter-spacing: 1px;">
+                    <!-- Το περιεχόμενο μπαίνει δυναμικά -->
+                </div>
+            </div>
+
+            <!-- BROWSER WINDOW ΓΙΑ INTERNET (ΕΠΙΠΕΔΟ 3) -->
+            <div class="retro-window" id="browser-window" style="display: none; width: 800px; height: 500px; min-width: 560px; min-height: 240px; padding: 0; top: 42%; left: 50%; transform: translate(-50%, -50%); z-index: 100; overflow: hidden; flex-direction: column;">
+                <div class="window-header" id="browser-header" style="background-color: #333; min-height: 22px; padding: 2px 5px; flex-shrink: 0;">
+                    <span id="browser-title">🌐 Web Browser</span>
+                    <div class="window-controls">
+                        <button class="win-btn" onclick="document.getElementById('browser-window').style.display = 'none'" style="background-color: #c93b3b; color: white;">X</button>
+                    </div>
+                </div>
+                <!-- BROWSER CONTAINER (Tabs, Toolbar) -->
+                <div id="browser-tabs-container" style="display: flex; background: #c0c0c0; padding: 5px 5px 0 5px; gap: 2px; overflow-x: auto; flex-shrink: 0;">
+                    <!-- Τα Tabs μπαίνουν δυναμικά από JS -->
+                </div>
+                <div class="browser-toolbar" style="background: #e0e0e0; padding: 5px; display: flex; gap: 5px; align-items: center; border-bottom: 1px solid #999; flex-shrink: 0;">
+                    <button onclick="goBack()" style="padding: 2px 8px;">⬅ Πίσω</button>
+                    <button onclick="if(typeof openNewTab === 'function') openNewTab('home', 'Booble')" style="padding: 2px 8px;">➕ Νέο Tab</button>
+                    <input type="text" id="url-input" value="" style="flex: 1; padding: 3px;" readonly>
+                    <button onclick="if(typeof toggleBrowserTheme === 'function') toggleBrowserTheme()" id="theme-toggle-btn" style="padding: 2px 8px; cursor: pointer;">🌙 Dark</button>
+                </div>
+                <div id="browser-content" style="flex: 1; background-color: #fff; overflow-y: auto; font-family: 'VT323', monospace; color: black; letter-spacing: 1px; position: relative; overflow-x: hidden; font-size: 70%;">
+                    <!-- Το περιεχόμενο μπαίνει δυναμικά -->
+                </div>
+                
+                <!-- POP-UP CONTAINER (ΚΡΥΦΟ ΑΡΧΙΚΑ) -->
+                <div id="browser-popup" style="display:none; position:absolute; bottom:15px; right:15px; z-index:5000; background:white; border:2px solid #333; padding:10px; box-shadow: -3px 3px 10px rgba(0,0,0,0.3); text-align:center; width:200px; font-family: Arial, sans-serif; border-radius:6px;">
+                    <div style="position:absolute; top:2px; right:5px; cursor:pointer; font-weight:bold; color:red; font-size:14px;" onclick="if(typeof closeBrowserPopup === 'function') closeBrowserPopup()">✖</div>
+                    <h2 id="popup-title" style="margin-top:0; margin-bottom:5px; font-size: 14px;">ΤΙΤΛΟΣ</h2>
+                    <p id="popup-desc" style="font-size: 12px; margin: 5px 0;">Περιγραφή εδώ</p>
+                    <button id="popup-btn" onclick="if(typeof triggerVirus === 'function') triggerVirus()" style="background:#00cc00; color:white; padding:5px 10px; font-size: 12px; font-weight:bold; border:none; cursor:pointer; margin-top:5px; border-radius:4px;">ΚΛΙΚ ΕΔΩ</button>
+                </div>
+            </div>
+
+            <!-- INSTALIFE WINDOW -->
+            <div class="retro-window" id="instalife-window" style="display: none; width: 700px; padding: 0; top: 10%; left: 10%; z-index: 100;">
+                <div class="window-header" id="instalife-header" style="background-color: #8a3ab9; height: 22px; padding: 2px 5px;">
+                    <span id="instalife-title">📷 InstaLife</span>
+                    <div class="window-controls">
+                        <button class="win-btn" onclick="document.getElementById('instalife-window').style.display = 'none'" style="background-color: #c93b3b; color: white;">X</button>
+                    </div>
+                </div>
+                <div id="instalife-content" style="display: flex; height: 400px; background-color: #fff; font-family: 'Press Start 2P', monospace; font-size: 10px; letter-spacing: 0px;">
+                    <!-- Αριστερή Στήλη: Επαφές -->
+                    <div id="instalife-sidebar" style="width: 250px; border-right: 2px solid #ccc; background-color: #f9f9f9; overflow-y: auto;">
+                        <div style="padding: 10px; font-weight: bold; border-bottom: 2px solid #ccc; background-color: #eee;">Messages</div>
+                        <div id="instalife-contact-list" style="padding: 20px; text-align: center; color: #888; font-style: italic; line-height: 1.5;">
+                            Δεν υπάρχουν νέα μηνύματα.
+                        </div>
+                    </div>
+                    <!-- Δεξιά Στήλη: Chat ή Profile -->
+                    <div id="instalife-main" style="flex: 1; display: flex; flex-direction: column; background-color: #fff;">
+                        <!-- Default empty state -->
+                        <div id="instalife-empty" style="flex: 1; display: flex; align-items: center; justify-content: center; color: #aaa; font-style: italic;">
+                            Επίλεξε μια συνομιλία για να διαβάσεις.
+                        </div>
+                        
+                        <!-- Chat interface (hidden by default) -->
+                        <div id="instalife-chat" style="display: none; flex-direction: column; height: 100%;">
+                            <!-- Header / Profile snippet -->
+                            <div id="chat-header" style="background-color: #f0f0f0; border-bottom: 2px solid #ccc; padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <div id="chat-avatar" style="width: 30px; height: 30px; background-color: #888; border: 2px solid #333; border-radius: 50%;"></div>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span id="chat-display-name" style="font-weight: bold; font-size: 14px; color: #000;">Name</span>
+                                    <span id="chat-username" style="font-size: 10px; color: #555;">@username</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Messages Area -->
+                            <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background-color: #fafafa;">
+                                <!-- Bubbles injected here -->
+                            </div>
+                            
+                            <!-- Options Area -->
+                            <div id="chat-options" style="border-top: 2px solid #ccc; padding: 10px; background-color: #eee; display: flex; flex-direction: column; gap: 8px; display: none;">
+                                <!-- Buttons injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile View (hidden by default, now takes full width/height of window body) -->
+                <div id="instalife-profile-view" style="display: none; height: 400px; position: relative; overflow: hidden; background: #fafafa; font-family: 'Press Start 2P', monospace;">
+                    <div id="profile-swipe-bg-red" class="swipe-bg" style="background-color: #b32424; justify-content: flex-end; padding-right: 120px;">ΑΠΑΤΗ</div>
+                    <div id="profile-swipe-bg-green" class="swipe-bg" style="background-color: #2E7D32; justify-content: flex-start; padding-left: 60px;">ΑΣΦΑΛΕΣ</div>
+                    
+                    <div id="profile-swipe-card" style="position: absolute; width: 80%; height: 75%; left: 10%; top: 12.5%; background: #fff; border: 2px solid #000; box-shadow: 4px 4px 0px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; padding: 20px; z-index: 10; cursor: grab; user-select: none; box-sizing: border-box;">
+                        <div id="profile-avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #333; margin-bottom: 10px; pointer-events: none;"></div>
+                        <h2 id="profile-display-name" style="margin: 0; font-size: 16px; pointer-events: none;">Name</h2>
+                        <h3 id="profile-username" style="margin: 5px 0 15px 0; color: #666; font-size: 12px; pointer-events: none;">@username</h3>
+                        
+                        <div style="display: flex; gap: 20px; text-align: center; margin-bottom: 5px; width: 100%; justify-content: center; pointer-events: none;">
+                            <div><div style="font-size: 14px; font-weight: bold;" id="profile-followers">0</div><div style="font-size: 8px; color: #888;">Followers</div></div>
+                            <div><div style="font-size: 14px; font-weight: bold;" id="profile-mutuals">0</div><div style="font-size: 8px; color: #888;">Κοινοί</div></div>
+                        </div>
+                        <div id="profile-mutual-names" style="font-size: 8px; color: #666; margin-bottom: 15px; text-align: center; pointer-events: none; font-style: italic;"></div>
+                        
+                        <p id="profile-bio" style="font-size: 10px; line-height: 1.4; text-align: center; padding: 0 10px; flex: 1; pointer-events: none;">Bio text here</p>
+                        
+                        <button id="profile-back-btn" onclick="closeProfileView()" style="margin-top: 15px; padding: 8px 15px; background: #eee; border: 2px solid #333; font-family: inherit; font-size: 10px; cursor: pointer; pointer-events: auto;">⬅ ΕΠΙΣΤΡΟΦΗ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ΔΟΧΕΙΟ ΕΙΔΟΠΟΙΗΣΕΩΝ (NOTIFICATIONS) ΜΕΣΑ ΣΤΟ ΛΕΙΤΟΥΡΓΙΚΟ ΣΥΣΤΗΜΑ -->
+            <div id="notification-container" style="position: absolute; top: 15px; right: 190px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+
+        </div>
+
+        <div id="monitor-hitbox" onclick="zoomIn()"></div>
+        <div id="red-book-hitbox" onclick="openNotebook()"></div>
+
+        <!-- TELEPHONE - RING RING overlay (Πίστα 4) -->
+        <div id="phone-hitbox" style="display:none; position:absolute; bottom:4%; right:8%; width:18%; height:32%; cursor:pointer; z-index:25;" onclick="onPhoneAnswer()"></div>
+        <div id="ring-ring-label" style="display:none; position:absolute; bottom:48%; right:5%; z-index:26; pointer-events:none; text-align:center;">
+            <span class="ring-text">RING</span>
+            <span class="ring-text ring-offset">RING</span>
+        </div>
+    </div>
+
+    <div class="exit-zone" id="exitZone" onmouseenter="zoomOut()"></div>
+
+    <div class="notebook-ui" id="notebook">
+        <div class="close-notebook" onclick="closeNotebook()">✖</div>
+        
+        <div class="notebook-tabs">
+            <div class="tab" onclick="switchTab('personal-data', this)">🆔 Προσωπικά Στοιχεία</div>
+            <div class="tab active" onclick="switchTab('email-rules', this)">✉️ Emails & Phishing</div>
+            <div class="tab" onclick="switchTab('social-rules', this)">👥 Social Media</div>
+            <div class="tab" onclick="switchTab('web-rules', this)">🌐 Internet</div>
+        </div>
+
+        <div class="notebook-page" id="personal-data">
+            <h2>Προσωπικά Στοιχεία</h2>
+            <p>Αυτά είναι τα δικά σου στοιχεία. <strong>ΠΟΤΕ</strong> δεν πρέπει να τα μοιραστείς με κανέναν στο διαδίκτυο, σε φόρμες ή σε αγνώστους!</p>
+            <ul>
+                <li><strong>Ονοματεπώνυμο:</strong> Άλεξ Παπαδόπουλος</li>
+                <li><strong>Τηλέφωνο:</strong> 697 676767</li>
+                <li><strong>Διεύθυνση:</strong> Αριστοτέλους 14, Αθήνα</li>
+                <li><strong>Σχολείο:</strong> 3ο Δημοτικό</li>
+                <li><strong>Κωδικοί Πρόσβασης (Passwords):</strong> <span style="color:#d90000; font-weight:bold;">ΑΚΡΩΣ ΑΠΟΡΡΗΤΟΙ</span></li>
+            </ul>
+            <div class="golden-rule">
+                Ο Κωδικός Πρόσβασης (Password) είναι το κλειδί του σπιτιού σου. Δεν το δίνεις ΣΕ ΚΑΝΕΝΑΝ!
+            </div>
+        </div>
+
+        <div class="notebook-page active-page" id="email-rules">
+            <h2>Κανόνες Email (Ενεργές Συνδρομές & Phishing)</h2>
+            <p>Συνεργάζεσαι αποκλειστικά με τις παρακάτω εταιρείες. Πολλές φορές θα σου στείλουν email για τις νέες υπηρεσίες τους. Αυτά είναι τα <strong>ΜΟΝΑΔΙΚΑ</strong> επίσημα email τους:</p>
+            <ul>
+                <li><strong>Netflix:</strong> <code style="font-family: monospace; font-size: 1.8rem;">support@netflix.com</code></li>
+                <li><strong>Public:</strong> <code style="font-family: monospace; font-size: 1.8rem;">newsletter@public.gr</code></li>
+                <li><strong>Τράπεζα (Alpha):</strong> <code style="font-family: monospace; font-size: 1.8rem;">info@alpha.gr</code></li>
+            </ul>
+
+            <h3 style="margin-top: 30px; border-bottom: 2px solid #ccc;">ΧΡΥΣΟΙ ΚΑΝΟΝΕΣ PHISHING</h3>
+            <p><strong>1. Έλεγχος Διεύθυνσης:</strong> Μην κοιτάς μόνο το Όνομα του αποστολέα. Έλεγχε ΠΑΝΤΑ την πραγματική διεύθυνση email πίσω από το όνομα!</p>
+            
+            <img src="img/email_sketch_doodle.png" alt="Email Check Sketch" class="sketch-img">
+
+            <div class="golden-rule">
+                ΚΑΜΙΑ εταιρεία δεν πρόκειται ΠΟΤΕ να σου ζητήσει Κωδικούς ή Τραπεζικά Δεδομένα μέσω Email!<br><span style="font-size: 2.0rem;">(Αν το κάνει, είναι Spoofing-Απάτη!)</span>
+            </div>
+            
+            <p><strong>2. Προσοχή στα Links:</strong> Πάντα προσοχή στα links! Διπλοτσεκάρουμε πάντα αν είναι από έγκυρη πηγή. Μην κάνεις κλικ αν έχεις αμφιβολίες.</p>
+
+            <p><strong>3. Λέξεις Πανικού:</strong> Αν το email λέει <em>"Ο λογαριασμός σας διαγράφεται σε 24 ώρες"</em> ή <em>"Κερδίσατε"</em>, είναι κόλπο για να σε αγχώσουν. Αγνόησέ τα.</p>
+        </div>
+
+        <div class="notebook-page" id="social-rules" style="overflow-y: auto;">
+            <h2>Οδηγίες InstaLife</h2>
+            <p>Μπορείς να πατήσεις πάνω στο προφίλ ενός λογαριασμού για να δεις τα στοιχεία του λογαριασμού. Μπορείς να δεις τους ακολούθους, το βιογραφικό, καθώς και πόσους κοινούς έχετε.</p>
+            <img src="img/odigies_instalife.png" alt="Οδηγίες Προφίλ" style="width: 45%; display: block; border: 2px solid #333; margin: 15px auto;">
+            
+            <p>Όσο είσαι στο προφίλ ενός χρήστη, μπορείς να κάνεις swipe προς τα δεξιά για να τον κρίνεις <strong>ασφαλή</strong> και swipe προς τα αριστερά για να τον κρίνεις <strong>απάτη</strong>.</p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin: 15px 0;">
+                <img src="img/asfales_instalife.png" alt="Swipe Ασφαλές" style="width: 35%; border: 2px solid #333;">
+                <img src="img/apath_instalife.png" alt="Swipe Απάτη" style="width: 35%; border: 2px solid #333;">
+            </div>
+
+            <h3 style="margin-top: 25px; border-bottom: 2px solid #ccc;">Ασφαλείς Επαφές</h3>
+            <p>Οι <strong>μόνες ασφαλείς επαφές σου</strong> είναι:</p>
+            <ul>
+                <li><strong>@mama_bear</strong></li>
+                <li><strong>@maria_bestie</strong></li>
+                <li><strong>@george_skater</strong></li>
+            </ul>
+            <p>Επίσης, πολλές φορές μπορεί να σου στείλει η υποστήριξη του δικτύου με το username <strong>@InstaLife_Support</strong>.</p>
+            
+            <div class="golden-rule">
+                Άμα επικοινωνήσουν μαζί σου οι <strong>ασφαλείς επαφές</strong>, φρόντισε να διασταυρώσεις ότι είναι το <strong>σωστό username</strong>!
+            </div>
+
+            <h3 style="margin-top: 25px; border-bottom: 2px solid #ccc;">Έξυπνη Χρήση Πληροφοριών</h3>
+            <p>Τα στοιχεία προφίλ ενός λογαριασμού μπορούν να σου δώσουν πολύτιμες πληροφορίες. Αξιοποίησέ τα έξυπνα:</p>
+            <ul>
+                <li><strong>Αριθμός Ακολούθων:</strong> Συχνά τα "botάκια" (αυτοματοποιημένοι λογαριασμοί απάτης) σε παραπέμπουν να πατήσεις ένα link και έχουν πολύ λίγους ακολούθους, καθώς είναι καινούργιοι λογαριασμοί.</li>
+                <li><strong>Το Βιογραφικό (Bio):</strong> Μπορεί να περιέχει στοιχεία για τις προθέσεις κάποιου, ή ακόμα και ανακριβείς πληροφορίες που προδίδουν ότι λέει ψέματα.</li>
+            </ul>
+
+            <h3 style="margin-top: 25px; border-bottom: 2px solid #ccc;">Κοινοί Ακόλουθοι & Έμπιστοι Φίλοι</h3>
+            <p>Υπάρχει περίπτωση να σου στείλουν άνθρωποι που υποστηρίζουν ότι σε ξέρουν, αλλά εσύ δεν μπορείς να καταλάβεις ποιοι είναι. Το να έχετε έναν <strong>κοινό ακόλουθο</strong> που είναι <strong>έμπιστο άτομο</strong> είναι ένα πολύ καλό σημάδι εμπιστοσύνης.</p>
+            <p>Αν πέσεις σε τέτοια περίπτωση, μπορείς <strong>πάντα να ρωτήσεις την έμπιστη επαφή σου</strong> για το κατά πόσο γνωρίζει τον άγνωστο λογαριασμό και αν είναι αξιόπιστος. Έπειτα, κρίνε μόνος σου το κατά πόσο είναι αξιόπιστοι με βάση τις συνομιλίες σας.</p>
+
+            <h3 style="margin-top: 25px; border-bottom: 2px solid #ccc;">Συμμαθητές (Πέμπτη Δημοτικού)</h3>
+            <p>Παρακάτω φαίνονται τα ονόματα των συμμαθητών σου στην <strong>ΠΕΜΠΤΗ ΔΗΜΟΤΙΚΟΥ</strong>, τους οποίους ξέρεις στην πραγματική ζωή αλλά <strong>δεν</strong> ακολουθείς στο InstaLife:</p>
+            <ul>
+                <li>Χριστίνα Ιωάννου</li>
+                <li>Γεωργία Παππά</li>
+                <li>Μιχάλης Γεωργίου</li>
+                <li>Κώστας Αντωνίου</li>
+                <li>Ελένη Νικολάου</li>
+            </ul>
+            <p style="margin-top: 15px;">Τα μέσα κοινωνικής δικτύωσης (Social Media) σου δίνουν τη δυνατότητα να κάνεις και νέους φίλους. Αν κάποιος που δεν ξέρεις σου στείλει και είναι φίλος φίλου σου, μπορεί να είναι καλή αφορμή να τον γνωρίσεις. Ωστόσο, πρέπει πάντα να διασταυρώνεις ότι είναι <strong>ΑΣΦΑΛΕΣ</strong>. Εμπιστεύσου πρώτα τη δική σου κρίση!</p>
+
+            <div style="background-color: #ffcccc; border: 2px solid #d90000; padding: 15px; margin-top: 25px; margin-bottom: 15px; border-radius: 5px;">
+                <h3 style="color: #d90000; margin-top: 0; text-align: center;">ΠΡΟΣΟΧΗ - ΓΕΝΙΚΕΣ ΟΔΗΓΙΕΣ</h3>
+                <ol style="margin-bottom: 0;">
+                    <li style="margin-bottom: 10px;"><strong>ΔΕΝ ΕΙΝΑΙ ΟΛΟΙ ΟΙ ΑΠΑΤΕΩΝΕΣ ΜΠΟΤΑΚΙΑ.</strong> Όταν ανοίγεις μια συνομιλία με κάποιον, του δίνεις το δικαίωμα να σου στέλνει ό,τι θέλει. Πρόσεχε!</li>
+                    <li style="margin-bottom: 10px;"><strong>ΔΕΝ ΕΙΣΑΙ ΠΟΤΕ ΥΠΟΧΡΕΩΜΕΝΟΣ</strong> να δώσεις προσωπικά στοιχεία σε <strong>ΚΑΝΕΝΑΝ</strong> στο ίντερνετ, ειδικά αν έχεις αμφιβολίες.</li>
+                    <li><strong>ΑΝ ΔΕΝ ΕΙΣΑΙ ΣΙΓΟΥΡΟΣ ΓΙΑ ΚΑΠΟΙΟΝ, ΥΠΟΜΟΝΗ.</strong> Αν σου πει κάτι προβληματικό, απομακρύνσου. Σε περίπτωση ασιγουρίας, το ασφαλές είναι να το θεωρήσεις <strong>ΑΠΑΤΗ</strong>.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="notebook-page" id="web-rules" style="font-size: 2.4rem; line-height: 1.8;">
+            <h2>Οδηγίες Internet</h2>
+
+            <div style="margin-top: 20px;">
+                <div>
+                    <!-- Booble Search Section -->
+                    <div style="width: 100%; display: flex; flex-direction: column;">
+                        <div style="margin-bottom: 25px; width: 100%;">
+                            <p style="margin-bottom: 15px; font-size: 1.4em;"><strong>Πώς ψάχνω στο Booble;</strong></p>
+                            <p style="color: #000; line-height: 1.8;">
+                                Για να κάνεις αναζήτηση, πρέπει να <strong>πατήσεις με το ποντίκι σου μέσα στην μπάρα αναζήτησης</strong> και στη συνέχεια να πληκτρολογήσεις τις λέξεις χρησιμοποιώντας το <strong>πληκτρολόγιό σου</strong>. Φρόντισε να έχεις τη γλώσσα στα <strong>ελληνικά</strong>!
+                            </p>
+                        </div>
+                        <div style="position: relative; width: 100%;">
+                            <img src="img/booble_guide.png" alt="Οδηγός αναζήτησης Booble" style="width: 45%; display: block; border: 2px solid #333; margin: 15px auto; padding: 5px; background: white; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 2px dashed #999; padding-top: 15px;">
+                <div style="font-size: 1.15em; margin-bottom: 25px; padding: 10px; background-color: #e6f2ff; border-left: 5px solid #007bff; border-radius: 5px;">
+                    <span style="color: #007bff; font-weight: bold;">Tip:</span> Μπορείτε να γράψετε τις λέξεις όπως θέλετε! Με μικρά, με ΚΕΦΑΛΑΙΑ, με τόνους ή χωρίς τόνους. Δεν χρειάζεται η ορθογραφία να είναι τέλεια, θα δουλέψουν μια χαρά!
+                </div>
+
+                <p><strong>Μυστικές Λέξεις Κλειδιά:</strong><br>
+                Μόλις ολοκληρώσεις την αποστολή των Social Media (InstaLife), θα αποκαλυφθούν οι Λέξεις Κλειδιά. Όταν εμφανιστούν, θα τις ψάξετε στην μπάρα αναζήτησης που είναι στην κεντρική σελίδα του Booble.</p>
+                <div class="blurred-keyword" id="secret-keywords-list" style="font-weight: bold; color: #d90000; font-size: 2.8rem; margin: 20px 0;">
+                    1. Φιδάκι<br>
+                    2. Σχολική Ομάδα<br>
+                    3. Ιός Β
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 2px dashed #999; padding-top: 15px;">
+                <p><strong>Πώς να καταθέσεις τα sites:</strong><br>
+                Μόλις αναζητήσεις την κάθε λέξη κλειδί, θα ανοίξουν διαφορετικά αποτελέσματα (tabs). Πρέπει να εξετάσεις την κάθε σελίδα για να αποφασίσεις αν είναι αξιόπιστη ή επικίνδυνη <strong>απλά ξεφυλλίζοντάς την (scroll)</strong>.</p>
+                <p style="color: #d90000; font-weight: bold; text-decoration: underline;">ΠΡΟΣΟΧΗ: Το swipe γίνεται ΠΑΝΩ στα links (τίτλους) των αποτελεσμάτων αναζήτησης και ΟΧΙ μέσα στις ίδιες τις ιστοσελίδες!</p>
+                <p>- Κάνε <strong>Swipe Δεξιά</strong> όταν θεωρείς ότι η σελίδα είναι <strong>ΑΣΦΑΛΗΣ</strong> και μπορείς να τη διαβάσεις κανονικά χωρίς να κρύβει κάποια απάτη (scam).<br>
+                - Κάνε <strong>Swipe Αριστερά</strong> όταν θεωρείς ότι η σελίδα είναι ύποπτη και αποτελεί <strong>ΑΠΑΤΗ</strong>!</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                    <img src="img/swipe_bad.png" alt="Swipe Left Bad" class="sketch-img" style="max-width: 48%; border: 2px solid #333; padding: 5px; background: white;">
+                    <img src="img/swipe_good.png" alt="Swipe Right Good" class="sketch-img" style="max-width: 48%; border: 2px solid #333; padding: 5px; background: white;">
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <div style="border: 3px solid #0056b3; border-radius: 12px; padding: 25px; background: #f9fbff;">
+                    <p style="font-size: 1.5em; color: #0056b3; margin-top: 0;"><strong>Λέξη Κλειδί 1 - <span class="blurred-keyword">Φιδάκι</span></strong></p>
+                    <div style="margin-left: 20px; font-size: 1.1em; line-height: 1.6;">
+                        <strong>Παιχνίδια και Downloads</strong><br>
+                        Όταν ψάχνεις στο ίντερνετ για να κατεβάσεις το αγαπημένο σου παιχνίδι, θα παρατηρήσεις ότι υπάρχουν πολλές διαφορετικές εκδόσεις. Κάποιες από αυτές μπορεί να είναι απάτες.<br><br>
+                        
+                        <strong>Η Αποστολή σου:</strong><br>
+                        Ο στόχος σου είναι να εξερευνήσεις τα αποτελέσματα και να εντοπίσεις ποιο site οδηγεί στην πραγματική και ασφαλή έκδοση του παιχνιδιού. Όταν πιστεύεις ότι το βρήκες, μπες στη σελίδα και <strong>πάτα το κουμπί Download</strong> για να δεις αν τα κατάφερες. Αφού επιβεβαιώσεις ότι είναι το σωστό, επέστρεψε πίσω και κάνε <strong>Swipe Δεξιά</strong>!<br><br>
+                        
+                        <strong>Τι είναι τα αρχεία APK;</strong><br>
+                        Τα αρχεία <strong>APK</strong> είναι παιχνίδια και εφαρμογές για τα κινητά με Android. <br>
+                        <span style="color: #d90000; font-weight: bold;">ΠΡΟΣΟΧΗ:</span> Όταν τα κατεβάζουμε από το επίσημο κατάστημα (όπως το Google Play) είναι ασφαλή. Αν όμως τα κατεβάσουμε από <strong>άγνωστες σελίδες</strong> στο ίντερνετ που τα δίνουν «δωρεάν» ή σου υπόσχονται βελτιώσεις (όπως άπειρες ζωές), μπορεί να κρύβουν <strong>ιούς</strong>! Αυτοί οι ιοί μπορούν να κλέψουν τους κωδικούς μας ή να χαλάσουν το κινητό μας. Γι' αυτό, <strong>ΠΟΤΕ</strong> δεν κατεβάζουμε APK από τυχαίες σελίδες!<br><br>
+                        
+                        <strong>Κατέβασε το Παιχνίδι!</strong><br>
+                        Αν βρεις το σωστό site, μπορείς να κατεβάσεις το παιχνίδι και να το παίξεις κατευθείαν στην Επιφάνεια Εργασίας σου!<br><br>
+                        <strong>Χειρισμοί παιχνιδιού:</strong><br>
+                        - <strong>Βελάκι Πάνω (↑):</strong> Πας πάνω<br>
+                        - <strong>Βελάκι Κάτω (↓):</strong> Πας κάτω<br>
+                        - <strong>Βελάκι Αριστερά (←):</strong> Πας αριστερά<br>
+                        - <strong>Βελάκι Δεξιά (→):</strong> Πας δεξιά
+                    </div>
+                </div>
+                
+                <div style="border: 3px solid #0056b3; border-radius: 12px; padding: 25px; margin-top: 25px; background: #f9fbff;">
+                    <p style="font-size: 1.5em; color: #0056b3; margin-top: 0;"><strong>Λέξη Κλειδί 2 - <span class="blurred-keyword">Σχολική Ομάδα</span></strong></p>
+                    <div style="margin-left: 20px; font-size: 1.1em; line-height: 1.6;">
+                        Η αποστολή σου είναι να εντοπίσεις και να καταθέσεις κακόβουλα sites που προσπαθούν να ξεγελάσουν μαθητές. Ωστόσο, διαπιστώσαμε πως ένα από τα sites που θα δεις είναι ιδιαίτερη περίπτωση.<br><br>
+
+                        <strong>1. Ομαδική συνομιλία σχολείου (Kids Chat Zone):</strong><br>
+                        Αυτό το site είναι <strong style="color: green;">ΑΠΟΛΥΤΑ ΑΣΦΑΛΕΣ</strong>. Πρόκειται για μια ομαδική συνομιλία μαθητών. Μπορούμε να το εμπιστευτούμε! Ωστόσο, παρόλο που η σελίδα είναι ασφαλής, μπορεί μέσα να συναντήσεις άσχημη συμπεριφορά από κάποιον χρήστη (Cyberbullying). Γι' αυτό υπάρχει η δυνατότητα αναφοράς.<br><br>
+                        
+                        <strong>2. Πώς λειτουργεί η Αναφορά (Report):</strong><br>
+                        Αν δεις κάποιον να μιλάει άσχημα, μπορείς να πατήσεις πάνω στο <strong>όνομά του</strong> από τη λίστα των χρηστών στα δεξιά. Μόλις το κάνεις, θα εμφανιστεί ένα κουτάκι που σε ρωτάει γιατί κάνεις αναφορά (π.χ. για Cyberbullying) για να τον κάνεις report!<br>
+                        <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; align-items: flex-start;">
+                            <div style="position: relative; display: inline-block;">
+                                <img src="img/users_list.png" alt="Users List" style="height: 350px; border: 2px solid #333; border-radius: 8px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+                                <div style="position: absolute; top: 57%; left: 43%; font-size: 7rem; color: #d90000; font-weight: bold; text-shadow: 2px 2px 4px #fff; line-height: 1; pointer-events: none; transform: translateY(-50%);">
+                                    &#8592;
+                                </div>
+                            </div>
+                            <img src="img/report_toxicgamer.png" alt="Report User" style="height: 350px; border: 2px solid #333; border-radius: 8px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+                        </div>
+                        <br>
+                        <span style="color: #d90000; font-weight: bold; font-style: italic;">(Σημείωση: Η αναφορά δεν είναι σωστή ή λάθος. Ακόμα και αν κάνεις αναφορά κάποιον μαθητή που είχε καλή συμπεριφορά ή και κάποιον που ζήτησε συγγνώμη, δεν πειράζει, γιατί το Booble θα δει τα μηνύματά του και θα τον κρίνει ασφαλή! Οι αναφορές δεν είναι τιμωρία, μην ντρέπεσαι να τις κάνεις! Απλώς λες στο Booble ότι η κατάσταση ξεφεύγει και οι δικοί του άνθρωποι το χειρίζονται κατάλληλα.)</span>
+                    </div>
+                </div>
+                
+                <div style="border: 3px solid #0056b3; border-radius: 12px; padding: 25px; margin-top: 25px; background: #f9fbff;">
+                    <p style="font-size: 1.5em; color: #0056b3; margin-top: 0;"><strong>Λέξη Κλειδί 3 - <span class="blurred-keyword">Ιός Β</span></strong></p>
+                    <div style="margin-left: 20px; font-size: 1.1em; line-height: 1.6;">
+                        <strong>Άρθρο για τον "Ιό Β" (Fake News):</strong><br>
+                        Στο ίντερνετ υπάρχουν σελίδες που γράφουν ψέματα (<strong>Fake News</strong>) για να μας τρομάξουν. Εμείς όμως ξέρουμε την αλήθεια! <strong>Ψάξε για το θέμα του ιού και κατέθεσε τα site που διασπείρουν fake news!</strong><br><br>
+                        
+                        <div style="background-color: #fff3cd; border: 2px solid #ffeeba; border-left: 5px solid #ffc107; padding: 20px; margin: 15px 0; border-radius: 8px;">
+                            <h4 style="margin: 0 0 15px 0; color: #856404; font-size: 1.2em;">🔬 Η Ιστορία του Ιού: Όλη η Αλήθεια</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #555; line-height: 2;">
+                                <li>📍 <strong>Πού εμφανίστηκε;</strong> Σε μια μικρή πόλη στην <strong>Κίνα</strong>.</li>
+                                <li>🤒 <strong>Τι σου κάνει;</strong> Υψηλό πυρετό, ξηρό βήχα και δυνατό πονοκέφαλο.</li>
+                                <li>⏱️ <strong>Πόσο κρατάει;</strong> Τα συμπτώματα κρατάνε <strong>3 με 4 μέρες</strong>.</li>
+                                <li>😴 <strong>Μετά;</strong> Μπορεί να νιώθεις λίγο κουρασμένος για <strong>1-2 εβδομάδες</strong>.</li>
+                                <li>💊 <strong>Τι χρειάζεσαι;</strong> Πολλή ξεκούραση, βιταμίνες και άφθονο νερό!</li>
+                                <li>📉 <strong>Τι λένε τα στατιστικά;</strong> Με τον καιρό, ο ιός χάνει σταδιακά τις δυνάμεις του.</li>
+                                <li>✅ <strong>Δεν υπάρχει λόγος πανικού!</strong> Αυτά είναι τα <strong>μόνα</strong> αληθινά στοιχεία.</li>
+                            </ul>
+                        </div>
+
+                        Όταν ανοίξετε μια σελίδα, <strong>διαβάστε προσεκτικά</strong> τι γράφει. Αν λέει πράγματα που δεν ταιριάζουν με αυτά που μάθαμε πιο πάνω, τότε μάλλον λέει ψέματα!<br>
+                        Αφού διαβάσουμε, επιλέγουμε: <strong>αξιόπιστη σελίδα → Swipe Δεξιά ✅</strong> ή <strong>ψεύτικη σελίδα → Swipe Αριστερά ❌</strong>!
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; border-top: 4px solid #333; padding-top: 15px;">
+                <h3 style="color: #333; margin-bottom: 10px;">Γενικές Πληροφορίες</h3>
+                <ul style="font-size: 1.1em; line-height: 1.6; padding-left: 20px;">
+                    <li style="margin-bottom: 10px;"><strong>Προσωπικά Στοιχεία:</strong> Μεγάλη προσοχή στο πού δίνεις τα στοιχεία σου! Ισχύουν ακριβώς τα ίδια που ίσχυαν για τα emails και το InstaLife: <span style="color: #d90000; font-weight: bold;">ΠΟΤΕ ΔΕΝ ΔΙΝΟΥΜΕ ΤΑ ΣΤΟΙΧΕΙΑ ΜΑΣ ΣΕ ΙΣΤΟΣΕΛΙΔΕΣ ΠΟΥ ΔΕΝ ΕΙΝΑΙ ΕΜΠΙΣΤΕΣ!</span></li>
+                    <li><strong>Αναδυόμενα Παράθυρα (Pop-ups):</strong> Προσοχή στα παράθυρα που πετάγονται ξαφνικά προσπαθώντας να σε ξεγελάσουν (π.χ. "Κέρδισες!" ή "Έχεις ιό!"). <strong>Μην τα πατήσεις</strong>, είναι παγίδα!</li>
+                </ul>
+            </div>
+            
+
+
+
+        </div>
+    </div> <!-- Closes notebook -->
+    </div>
+    <!-- MAIN GAME LOGIC -->
+    <script src="js/data.js"></script>
+    <script src="data/levels.js"></script>
+    <script src="data/instalife.js"></script>
+    <script src="data/internet_pages.js"></script>
+    <script src="js/desktop.js"></script>
+    <script src="js/mail_app.js"></script>
+    <script src="js/browser.js"></script>
+</body>
+</html>

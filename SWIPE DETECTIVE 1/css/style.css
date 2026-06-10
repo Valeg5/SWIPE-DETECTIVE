@@ -1,0 +1,362 @@
+body, html {
+    margin: 0; padding: 0; height: 100%; background-color: #000; overflow: hidden;
+    user-select: none; font-family: monospace;
+}
+
+.workspace-bg {
+    width: 100%; height: 100%;
+    background-image: url('../img/background.png'); background-size: 100% 100%; 
+    background-position: center; background-repeat: no-repeat;
+    image-rendering: pixelated; position: absolute; top: 0; left: 0;
+    transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: 50% 25%; 
+}
+
+.workspace-bg.zoomed { transform: scale(2.2); }
+
+.os-interface {
+    position: absolute; top: 15%; left: 28%; width: 44%; height: 45%; z-index: 10;
+    display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; 
+    padding: 15px 15px 15px 65px; gap: 20px; pointer-events: none;
+    overflow: hidden;
+}
+.os-interface.active { pointer-events: auto; }
+
+#monitor-hitbox { position: absolute; top: 15%; left: 28%; width: 44%; height: 45%; cursor: pointer; z-index: 20; }
+#red-book-hitbox { position: absolute; bottom: 5%; left: 38%; width: 24%; height: 15%; cursor: pointer; z-index: 5; }
+
+.exit-zone {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 35px;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    z-index: 30; display: none; cursor: s-resize; 
+}
+.exit-zone::after {
+    content: '▼ ΚΑΤΕΒΑΣΕ ΤΟ ΠΟΝΤΙΚΙ ΕΔΩ ΓΙΑ ΕΞΟΔΟ ▼'; color: rgba(255, 255, 255, 0.85); 
+    font-size: 18px; font-weight: bold; position: absolute; width: 100%; text-align: center; bottom: 8px; text-shadow: 1px 1px 2px #000;
+}
+
+/* ======================= */
+/* PHONE RING RING (Πίστα 4) */
+/* ======================= */
+@keyframes ringShake {
+    /* Κουνιέται για ~1 δευτερόλεπτο (0-22% του 4.5s) */
+    0%   { transform: rotate(-8deg) translateX(-4px); }
+    5%   { transform: rotate(8deg)  translateX(4px); }
+    10%  { transform: rotate(-6deg) translateX(-3px); }
+    15%  { transform: rotate(6deg)  translateX(3px); }
+    20%  { transform: rotate(-4deg) translateX(-2px); }
+    22%  { transform: rotate(0deg)  translateX(0px); }
+    /* Σταματάει για ~3.5 δευτερόλεπτα (22-100% του 4.5s) */
+    22.1%, 100% { transform: rotate(0deg) translateX(0px); }
+}
+@keyframes ringShakeOffset {
+    0%   { transform: rotate(8deg)  translateX(4px); }
+    5%   { transform: rotate(-8deg) translateX(-4px); }
+    10%  { transform: rotate(6deg)  translateX(3px); }
+    15%  { transform: rotate(-6deg) translateX(-3px); }
+    20%  { transform: rotate(4deg)  translateX(2px); }
+    22%  { transform: rotate(0deg)  translateX(0px); }
+    22.1%, 100% { transform: rotate(0deg) translateX(0px); }
+}
+@keyframes ringPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.85; }
+}
+
+.ring-text {
+    display: block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 80px;
+    color: #ffffff;
+    font-style: italic;
+    letter-spacing: 6px;
+    text-shadow: 3px 3px 0 #444;
+    animation: ringShake 5.5s infinite, ringPulse 5.5s infinite;
+    transform-origin: center bottom;
+    line-height: 1.1;
+}
+.ring-text.ring-offset {
+    animation: ringShakeOffset 5.5s infinite, ringPulse 5.5s infinite;
+    margin-top: -10px;
+}
+
+/* ========================= */
+/* ICON SHAKING (Urgency FX) */
+/* ========================= */
+@keyframes iconShakeLight {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25%       { transform: translateX(-2px) rotate(-1deg); }
+    75%       { transform: translateX(2px) rotate(1deg); }
+}
+@keyframes iconShakeHeavy {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    20%       { transform: translateX(-5px) rotate(-2.5deg); }
+    40%       { transform: translateX(5px) rotate(2.5deg); }
+    60%       { transform: translateX(-4px) rotate(-2deg); }
+    80%       { transform: translateX(4px) rotate(2deg); }
+}
+.desktop-icon.shake-light { animation: iconShakeLight 0.5s infinite; }
+.desktop-icon.shake-heavy { animation: iconShakeHeavy 0.25s infinite; }
+
+/* Scary Word Animation (Για το ΚΑΝΕΝΑΝ και το ΑΠΑΝΤΑ ΤΟ ΤΗΛΕΦΩΝΟ) */
+@keyframes scaryShake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+.scary-word {
+    color: red;
+    display: inline-block;
+    animation: scaryShake 0.1s infinite;
+    font-weight: bold;
+    font-size: 1.5em; /* Λίγο μεγαλύτερο */
+}
+
+/* ΕΙΚΟΝΙΔΙΑ DESKTOP */
+.desktop-icon { display: flex; flex-direction: column; align-items: center; width: 110px; cursor: pointer; }
+.desktop-icon:hover .icon-img { background-color: rgba(0, 0, 128, 0.6); border: 1px dotted #fff; }
+.icon-img { width: 75px; height: 75px; font-size: 55px; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; border: 1px solid transparent; text-shadow: 2px 2px 0 rgba(0,0,0,0.5); }
+.custom-icon { width: 100%; height: 100%; object-fit: contain; }
+.icon-text { color: #fff; font-size: 14px; text-align: center; background-color: #0b1c6c; padding: 4px 8px; border: 1px solid #111; box-shadow: 1px 1px 0 #000; }
+
+/* ΣΗΜΕΙΩΜΑΤΑΡΙΟ ΚΑΙ SCROLLBARS */
+.notebook-ui { position: absolute; bottom: -100%; left: 10%; width: 80%; height: 60%; background-color: #f4ecd8; border-radius: 10px 10px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); z-index: 50; transition: bottom 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); font-family: 'Patrick Hand', cursive; color: #1a1a1a; }
+.notebook-ui.open { bottom: 0; }
+.close-notebook { position: absolute; top: 15px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; color: #8b0000; z-index: 60; }
+.close-notebook.locked { opacity: 0.5; pointer-events: none; }
+.notebook-tabs { position: absolute; top: -40px; left: 20px; display: flex; gap: 10px; }
+.tab { background-color: #e5c100; padding: 10px 20px; border-radius: 10px 10px 0 0; cursor: pointer; font-weight: bold; font-family: monospace; box-shadow: 2px -2px 5px rgba(0,0,0,0.3); transition: transform 0.2s, background-color 0.2s; }
+.tab:hover { background-color: #ffda00; }
+.tab.active { background-color: #f4ecd8; transform: translateY(5px); z-index: 51; }
+
+.notebook-page { display: none; padding: 30px 40px; height: 100%; box-sizing: border-box; font-size: 2.4rem; line-height: 1.4; overflow-y: auto; }
+.notebook-page.active-page { display: block; }
+.notebook-page h2 { color: #0b1c6c; border-bottom: 2px solid #ccc; padding-bottom: 10px; font-family: monospace; font-size: 3.2rem; margin-top: 10px; margin-bottom: 20px;}
+.notebook-page h3 { font-size: 2.8rem; margin-top: 25px; margin-bottom: 15px;}
+.notebook-page h4 { font-size: 2.4rem; }
+.notebook-page ul { list-style-type: square; padding-left: 20px; margin-bottom: 20px; }
+.notebook-page::-webkit-scrollbar { width: 10px; }
+.notebook-page::-webkit-scrollbar-track { background: transparent; }
+.notebook-page::-webkit-scrollbar-thumb { background-color: rgba(139, 0, 0, 0.3); border-radius: 5px; }
+
+.golden-rule { font-size: 2.2rem; font-weight: bold; color: #d90000; border: 3px dashed #d90000; padding: 15px; margin: 20px 0; text-align: center; transform: rotate(-1deg); background-color: rgba(217, 0, 0, 0.05); }
+.sketch-img { width: 100%; max-width: 500px; display: block; margin: 25px auto; mix-blend-mode: multiply; }
+
+/* ΓΕΝΙΚΑ ΠΑΡΑΘΥΡΑ ΛΕΙΤΟΥΡΓΙΚΟΥ */
+.retro-window { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background-color: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-bottom: 2px solid #000; border-right: 2px solid #000; box-shadow: 4px 4px 10px rgba(0,0,0,0.6); z-index: 100; font-family: 'VT323', monospace; letter-spacing: 1px; color: black; }
+.window-header { cursor: grab; background: linear-gradient(to right, #000080, #1084d0); color: white; padding: 3px 5px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+.window-header:active { cursor: grabbing; }
+.window-body { padding: 20px; }
+.progress-bar-container { width: 100%; height: 22px; background-color: #fff; border: 2px solid #808080; border-right-color: #e0e0e0; border-bottom-color: #e0e0e0; }
+.progress-bar-fill { height: 100%; background: repeating-linear-gradient(to right, #000080, #000080 12px, transparent 12px, transparent 14px); width: 0%; }
+
+/* VIDEO CALL WINDOW */
+.video-call-window { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 580px; background-color: #1e2233; border: 4px solid #111; border-radius: 4px; box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.4); z-index: 100; font-family: 'VT323', monospace; color: #f0f0f0; display: none; flex-direction: column; }
+.video-call-header { cursor: grab; background-color: #111; color: #f0f0f0; padding: 5px 10px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; }
+.video-call-header:active { cursor: grabbing; }
+.video-call-body { padding: 20px; display: flex; gap: 20px; cursor: pointer; }
+.video-feed { width: 140px; height: 140px; border: 3px solid #f2a65a; background-color: #000; position: relative; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+.video-feed::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0, 0, 0, 0.3) 3px, rgba(0, 0, 0, 0.3) 4px); pointer-events: none; }
+.dialogue-box { flex: 1; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; }
+.dialogue-text { font-size: 24px; line-height: 1.2; margin: 0; color: #f0f0f0; }
+.dialogue-prompt { margin-top: auto; text-align: right; font-size: 18px; color: #f2a65a; animation: blink 1s infinite; display: none; }
+.close-btn { background-color: transparent; border: none; color: #888; font-weight: bold; cursor: pointer; padding: 0 5px; font-family: 'VT323', monospace; font-size: 18px; }
+.close-btn:hover { color: #ff3333; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ==========================================
+   MAIL APP WINDOW 
+   ========================================== */
+#mail-window { background-color: #fff; border: 2px solid #555; box-shadow: 6px 6px 0 rgba(0,0,0,0.5); color: #000; }
+.window-controls .win-btn { background: transparent; border: 1px solid #fff; color: white; font-family: monospace; font-weight: bold; cursor: pointer; width: 20px; height: 20px; line-height: 14px; text-align: center; padding: 0; margin-left: 2px; }
+.mail-header-red { background-color: #cc3333; color: white; padding: 4px 10px; font-weight: bold; border-bottom: 2px solid #555; font-family: 'VT323', monospace; letter-spacing: 2px; }
+
+.mail-table-container { height: 400px; overflow-y: scroll; } 
+.mail-table-container::-webkit-scrollbar { width: 16px; }
+.mail-table-container::-webkit-scrollbar-track { background: #e0e0e0; border-left: 2px solid #555; }
+.mail-table-container::-webkit-scrollbar-thumb { background-color: #aaa; border: 2px solid #555; }
+
+.mail-table { width: 100%; border-collapse: collapse; font-family: 'VT323', monospace; font-size: 20px; } 
+.mail-table th { background-color: #c0c0c0; border-bottom: 2px solid #555; border-right: 2px solid #555; padding: 4px 8px; text-align: left; color: #111; letter-spacing: 1px; }
+.mail-table td { padding: 6px 8px; border-right: 2px solid #ccc; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mail-table tr:nth-child(even) { background-color: #f2f2f2; }
+.mail-table tr:nth-child(odd) { background-color: #ffffff; }
+.mail-table tr:hover { background-color: #add8e6; } 
+.mail-table tr.unread { font-weight: bold; }
+.mail-table tr.read { font-weight: normal; color: #444; }
+
+/* ==========================================
+   MAIL READER VIEW (ANIMATION)
+   ========================================== */
+#mail-reader-view { height: 400px; position: relative; background-color: #222; overflow: hidden; }
+
+.swipe-bg { 
+    position: absolute; top: 0; left: 0; 
+    width: 100%; height: 100%; display: flex; align-items: center; 
+    font-family: 'VT323', monospace; font-size: 50px; font-weight: bold; 
+    color: white; opacity: 0; z-index: 5; pointer-events: none; 
+    transition: opacity 0.1s; text-shadow: 2px 2px 0 #000; 
+}
+#swipe-bg-red { 
+    background-color: #b32424; 
+    justify-content: flex-end; 
+    padding-right: 120px; 
+}
+#swipe-bg-green { 
+    background-color: #2E7D32; 
+    justify-content: flex-start; 
+    padding-left: 60px; 
+}
+
+.swipe-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform-origin: 50% 100%; cursor: grab; z-index: 10; display: flex; flex-direction: column; }
+.swipe-card:active { cursor: grabbing; }
+
+/* === ΕΔΩ ΕΙΝΑΙ Η ΝΕΑ ΔΙΑΤΑΞΗ ΓΙΑ ΝΑ ΧΩΡΑΕΙ Η ΔΙΕΥΘΥΝΣΗ === */
+.reader-header { 
+    display: flex; 
+    flex-direction: column; 
+    background-color: #c0c0c0; 
+    border-bottom: 2px solid #555; 
+    font-family: 'VT323', monospace; 
+    font-size: 20px; 
+    font-weight: bold; 
+}
+.reader-sender, .reader-subject { 
+    padding: 6px 10px; 
+    border-right: none; 
+    width: 100%; 
+    white-space: normal; 
+    box-sizing: border-box;
+}
+.reader-sender {
+    border-bottom: 1px solid #999; 
+    color: #000080; 
+}
+/* ========================================================= */
+
+.reader-body { flex: 1; padding: 20px; font-family: 'VT323', monospace; font-size: 24px; overflow-y: auto; white-space: pre-wrap; }
+.reader-body::-webkit-scrollbar { width: 16px; }
+.reader-body::-webkit-scrollbar-track { background: #e0e0e0; border-left: 2px solid #555; }
+.reader-body::-webkit-scrollbar-thumb { background-color: #aaa; border: 2px solid #555; }
+
+.reader-footer { padding: 10px; background-color: #eee; border-top: 2px solid #555; display: flex; justify-content: space-between; align-items: center; }
+.back-btn { background-color: #cc3333; color: white; border: 2px solid #555; font-family: monospace; font-size: 18px; font-weight: bold; cursor: pointer; padding: 4px 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.5); }
+.back-btn:hover { background-color: #ff4444; }
+.back-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ==========================================
+   CLICKABLE LINKS & VIRUSES
+   ========================================== */
+.email-link {
+    color: #0000EE;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: bold;
+}
+.email-link:hover {
+    color: #FF0000;
+}
+
+.virus-popup {
+    position: absolute;
+    width: 250px;
+    background-color: #c0c0c0;
+    border-top: 2px solid #fff; border-left: 2px solid #fff;
+    border-bottom: 2px solid #000; border-right: 2px solid #000;
+    box-shadow: 4px 4px 10px rgba(0,0,0,0.6);
+    z-index: 9999;
+    font-family: 'VT323', monospace;
+    pointer-events: auto; /* Να πιάνουν τα κλικ (να μπλοκάρουν) */
+}
+.virus-header {
+    background: #000080; color: white; padding: 2px 5px; font-size: 16px;
+    display: flex; justify-content: space-between;
+}
+.virus-body {
+    padding: 15px; text-align: center; color: red; font-size: 20px; font-weight: bold;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+}
+.virus-icon { font-size: 40px; margin-bottom: 5px; }
+
+.hard-restart-btn {
+    position: absolute;
+    top: 20px; left: 20px;
+    background-color: #c0c0c0; color: #000;
+    border-top: 3px solid #fff; border-left: 3px solid #fff;
+    border-bottom: 3px solid #555; border-right: 3px solid #555;
+    padding: 8px 16px;
+    font-family: 'VT323', monospace; font-size: 26px; font-weight: bold;
+    cursor: pointer;
+    z-index: 10000;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    display: none; /* Κρυφό αρχικά */
+}
+.hard-restart-btn:hover { background-color: #e0e0e0; }
+.hard-restart-btn:active {
+    border-top: 3px solid #555; border-left: 3px solid #555;
+    border-bottom: 3px solid #fff; border-right: 3px solid #fff;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+
+/* ==========================================
+   NOTIFICATIONS
+   ========================================== */
+.retro-notification {
+    background-color: #c0c0c0;
+    border-top: 2px solid #fff; border-left: 2px solid #fff;
+    border-bottom: 2px solid #555; border-right: 2px solid #555;
+    padding: 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: #000;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 250px;
+    animation: popUp 0.3s ease-out, fadeOut 0.5s ease-in 4.5s forwards;
+}
+.notif-icon {
+    width: 20px; height: 20px; image-rendering: pixelated;
+}
+.notif-text {
+    line-height: 1.4;
+}
+@keyframes popUp {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-10px); }
+}@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+/* INSTALIFE CHAT */
+.chat-bubble { max-width: 80%; padding: 8px 12px; border: 2px solid #000; font-family: 'VT323', monospace; font-size: 18px; line-height: 1.2; word-wrap: break-word; box-shadow: 2px 2px 0 rgba(0,0,0,0.3); }
+.chat-bubble.received { align-self: flex-start; background-color: #fff; color: #000; }
+.chat-bubble.sent { align-self: flex-end; background-color: #add8e6; color: #000; }
+
+.chat-option-btn { background-color: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-bottom: 2px solid #555; border-right: 2px solid #555; padding: 8px 12px; font-family: 'Press Start 2P', monospace; font-size: 8px; cursor: pointer; text-align: left; color: #000; }
+.chat-option-btn:hover { background-color: #e0e0e0; }
+.chat-option-btn:active { border-top: 2px solid #555; border-left: 2px solid #555; border-bottom: 2px solid #fff; border-right: 2px solid #fff; }
+.chat-bubble.system { align-self: center; background-color: transparent; color: #555; border: none; font-style: italic; font-size: 14px; box-shadow: none; text-align: center; }
+
+/* Dark Mode Overrides for Browser */
+#browser-window.dark-theme #browser-content { background-color: #202124 !important; color: #fff !important; filter: invert(0.9) hue-rotate(180deg); }
+#browser-window.dark-theme #browser-header { background-color: #333 !important; color: #fff !important; }
+#browser-window.dark-theme .browser-toolbar { background-color: #333 !important; border-color: #5f6368 !important; }
+#browser-window.dark-theme #browser-content img,
+#browser-window.dark-theme #browser-content canvas { filter: invert(1) hue-rotate(180deg); }
+#browser-window.dark-theme #browser-popup { filter: invert(0.9) hue-rotate(180deg); }
+
+/* Blurred Keywords */
+.blurred-keyword { filter: blur(8px); transition: filter 1s ease; user-select: none; }
+.unblurred-keyword { filter: blur(0px); user-select: text; }

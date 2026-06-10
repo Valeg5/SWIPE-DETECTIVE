@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000; /* Ολόμαυρη οθόνη */
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #dialogue-container {
+            position: absolute;
+            top: 10%;
+            left: 5%;
+            width: 80%;
+            font-size: 32px; /* Τεράστια γράμματα */
+            line-height: 1.5;
+        }
+
+        #click-indicator {
+            display: none;
+            position: absolute;
+            bottom: -50px; /* Κάτω από το κείμενο */
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background-color: #fff;
+            animation: blink 1s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        #no-button {
+            display: none;
+            position: absolute;
+            bottom: 5%;
+            right: 5%;
+            font-size: 80px; /* Τεράστια γράμματα */
+            color: #ff0000;
+            background: none;
+            border: none;
+            font-family: 'Press Start 2P', monospace;
+            cursor: pointer;
+            text-shadow: 4px 4px 0px #550000;
+            transition: transform 0.1s;
+        }
+
+        #no-button:hover {
+            transform: scale(1.1);
+        }
+
+        #no-button:active {
+            transform: scale(0.9);
+        }
+
+        #click-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        /* Στυλ για το εκπαιδευτικό βίντεο */
+        #educational-container {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            z-index: 200;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .edu-text {
+            font-size: 32px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            max-width: 1000px;
+        }
+
+        .edu-title {
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        /* CRT Screen Off Animation */
+        .crt-off {
+            animation: crt-off-anim 0.5s ease-out forwards;
+            transform-origin: center center;
+        }
+
+        @keyframes crt-off-anim {
+            0% { transform: scale(1, 1); opacity: 1; }
+            40% { transform: scale(1, 0.005); opacity: 1; background-color: #fff; color: #fff; }
+            70% { transform: scale(0.005, 0.005); opacity: 1; background-color: #fff; color: #fff; }
+            100% { transform: scale(0, 0); opacity: 0; background-color: #fff; color: #fff; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ο Ήχος του Sans (πλέον μέσω WebAudio) -->
+
+    <!-- Overlay για κλικ οπουδήποτε -->
+    <div id="click-overlay" onclick="advanceDialogue()"></div>
+
+    <div id="dialogue-container">
+        <span id="dialogue-text"></span>
+        <div id="click-indicator" onclick="advanceDialogue()"></div>
+    </div>
+
+    <button id="no-button" onclick="advanceDialogue()">ΟΧΙ</button>
+
+    <!-- Εκπαιδευτικό Sequence -->
+    <div id="educational-container">
+        <div id="edu-line-1" class="edu-text"></div>
+        <div id="edu-line-2" class="edu-text"></div>
+        <div id="edu-line-3" class="edu-text"></div>
+    </div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSansSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(120 + Math.random() * 30, audioCtx.currentTime); 
+            gainNode.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.05); 
+        }
+
+        function playCRTClick() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        const baseDialogues = [
+            "...",
+            "Ντετέκτιβ, χαίρομαι που σε βρίσκω. Θέλω να μου δώσεις την διεύθυνση σου για να σου στείλω ένα πολύ σημαντικό πακέτο.",
+            "Ντετέκτιβ, σε παρακαλώ, λογικέψου. Δώσε μου την διεύθυνση σου.",
+            "Δεν καταλαβαίνεις; Πρέπει να μου δώσεις τον αριθμό της πιστωτικής σου κάρτας τώρα.",
+            "Τους κωδικούς σου! Δώσε μου τους κωδικούς πρόσβασης του συστήματος!",
+            "ΔΩΣΕ ΜΟΥ ΤΟΥΣ ΚΩΔΙΚΟΥΣ ΣΟΥ! ΔΩΣΕ ΜΟΥ ΤΑ ΔΕΔΟΜΕΝΑ ΣΟΥ!"
+        ];
+        const baseSpeeds = [150, 60, 40, 25, 10, 15];
+
+        let dialogues = [...baseDialogues];
+        let speeds = [...baseSpeeds];
+        
+        const repetitiveLines = [
+            "ΔΩΣΕ ΜΟΥ ΤΗΝ ΔΙΕΥΘΥΝΣΗ ΣΟΥ.", 
+            "ΔΩΣΕ ΜΟΥ ΤΟΥΣ ΚΩΔΙΚΟΥΣ ΣΟΥ.",
+            "ΔΩΣΕ ΜΟΥ ΤΗΝ ΠΙΣΤΩΤΙΚΗ ΣΟΥ ΚΑΡΤΑ.",
+            "ΔΩΣΕ ΜΟΥ ΤΟΝ ΤΡΑΠΕΖΙΚΟ ΣΟΥ ΛΟΓΑΡΙΑΣΜΟ.",
+            "ΔΩΣΕ ΜΟΥ ΤΗΝ ΠΡΟΣΒΑΣΗ ΣΤΟ ΣΥΣΤΗΜΑ.",
+            "ΔΩΣΕ ΜΟΥ ΟΛΑ ΤΑ ΔΕΔΟΜΕΝΑ ΣΟΥ."
+        ];
+
+        // Ο χρήστης πρέπει να πατήσει ΟΧΙ 15 φορές.
+        // Το index 1 έως 5 είναι 5 φορές. Άρα θέλουμε ακόμα 9 επαναλήψεις 
+        // για να φτάσουμε στα 14 μηνύματα με κείμενο, και 1 κεντρικό ΟΧΙ στο τέλος = 15.
+        for(let i=0; i<9; i++) {
+            dialogues.push(repetitiveLines[i % repetitiveLines.length]);
+            speeds.push(15); 
+        }
+
+        let currentIndex = 0;
+        let isTyping = false;
+        let typingInterval = null;
+
+        const dialogueTextElem = document.getElementById('dialogue-text');
+        const clickIndicator = document.getElementById('click-indicator');
+        const clickOverlay = document.getElementById('click-overlay');
+        const noButton = document.getElementById('no-button');
+
+        function typeDialogue(index) {
+            isTyping = true;
+            clickIndicator.style.display = 'none';
+            clickOverlay.style.display = 'none';
+            noButton.style.display = 'none';
+            dialogueTextElem.innerHTML = '';
+            
+            let currentText = dialogues[index];
+            let charIndex = 0;
+            let currentSpeed = speeds[index];
+
+            typingInterval = setInterval(() => {
+                if (charIndex < currentText.length) {
+                    dialogueTextElem.innerHTML += currentText.charAt(charIndex);
+                    if (currentText.charAt(charIndex) !== ' ') {
+                        playSansSound();
+                    }
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    isTyping = false;
+                    showControls(index);
+                }
+            }, currentSpeed);
+        }
+
+        function showControls(index) {
+            if (index === 0) {
+                // Στο ... εμφανίζουμε το click indicator και το overlay για κλικ παντού
+                clickIndicator.style.display = 'block';
+                clickOverlay.style.display = 'block';
+            } else {
+                // Στα υπόλοιπα απαιτούμε κλικ στο ΟΧΙ (το overlay κρύβεται)
+                noButton.style.display = 'block';
+            }
+        }
+
+        function showFinalCenteredNo() {
+            // Το τελευταίο ΟΧΙ μόνος του στο κέντρο
+            document.getElementById('dialogue-container').style.display = 'none';
+            
+            noButton.style.display = 'block';
+            noButton.style.bottom = 'auto';
+            noButton.style.right = 'auto';
+            noButton.style.top = '50%';
+            noButton.style.left = '50%';
+            noButton.style.transform = 'translate(-50%, -50%)';
+            noButton.style.fontSize = '120px'; 
+            
+            // Το background παραμένει κανονικό
+            document.body.style.backgroundColor = '#000'; 
+        }
+
+        function advanceDialogue() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (isTyping) {
+                // Fast-forward
+                clearInterval(typingInterval);
+                isTyping = false;
+                dialogueTextElem.innerHTML = dialogues[currentIndex];
+                showControls(currentIndex);
+            } else {
+                currentIndex++;
+                
+                if (currentIndex < dialogues.length) {
+                    typeDialogue(currentIndex);
+                } else if (currentIndex === dialogues.length) {
+                    // Είμαστε στο τελευταίο βήμα, εμφανίζουμε το κεντρικό ΟΧΙ
+                    showFinalCenteredNo();
+                } else {
+                    // Πατήθηκε το κεντρικό ΟΧΙ. Όλα εξαφανίζονται.
+                    noButton.style.display = 'none';
+                    document.body.style.backgroundColor = '#000';
+                    showDisconnectMessage();
+                }
+            }
+        }
+
+        function showDisconnectMessage() {
+            const disconnectElem = document.createElement('div');
+            disconnectElem.style.position = 'absolute';
+            disconnectElem.style.top = '50%';
+            disconnectElem.style.left = '50%';
+            disconnectElem.style.transform = 'translate(-50%, -50%)';
+            disconnectElem.style.fontSize = '24px';
+            disconnectElem.style.color = '#aaaaaa'; // Απαλό γκρι χρώμα
+            disconnectElem.style.textAlign = 'center';
+            disconnectElem.style.opacity = '1';
+            disconnectElem.style.transition = 'opacity 3s ease-in-out'; // Ομαλή εξαφάνιση (fade out)
+            document.body.appendChild(disconnectElem);
+            
+            const text = "ο χρήστης @epikefalis_detective αποσυνδέθηκε από το σύστημα.";
+            let charIndex = 0;
+            
+            // Αργός και ήρεμος ρυθμός, χωρίς ήχο typing
+            let typeInterval = setInterval(() => {
+                if (charIndex < text.length) {
+                    disconnectElem.innerHTML += text.charAt(charIndex);
+                    charIndex++;
+                } else {
+                    clearInterval(typeInterval);
+                    
+                    // Αφού εμφανιστεί όλο το μήνυμα, μένει για 2 δευτερόλεπτα
+                    setTimeout(() => {
+                        // Εξαφανίζεται ομαλά
+                        disconnectElem.style.opacity = '0';
+                        
+                        // Ο χρόνος fade-out είναι 3 δευτερόλεπτα. Μόλις ολοκληρωθεί:
+                        setTimeout(() => {
+                            const outAudio = new Audio('music/Detective Out!.mp3');
+                            outAudio.volume = 0; // Ξεκινάει από το μηδέν
+                            outAudio.play().catch(e => console.log('Audio Play Failed:', e));
+                            
+                            // Ακόμα πιο ομαλό Fade-In: αυξάνει την ένταση κατά 0.02 κάθε 100ms
+                            // Χρειάζεται 5 δευτερόλεπτα (50 βήματα) για να φτάσει στο 100%
+                            let fadeAudio = setInterval(() => {
+                                if (outAudio.volume < 0.98) {
+                                    outAudio.volume += 0.02;
+                                } else {
+                                    outAudio.volume = 1;
+                                    clearInterval(fadeAudio);
+                                }
+                            }, 100); 
+                            
+                            // Ξεκινάει το εκπαιδευτικό βίντεο διάρκειας 34s
+                            startEducationalSequence();
+                        }, 3000);
+                    }, 2000);
+                }
+            }, 80);
+        }
+
+        function startEducationalSequence() {
+            const eduContainer = document.getElementById('educational-container');
+            const line1 = document.getElementById('edu-line-1');
+            const line2 = document.getElementById('edu-line-2');
+            const line3 = document.getElementById('edu-line-3');
+            
+            eduContainer.style.display = 'flex';
+
+            // Βοηθητική συνάρτηση για ομαλή εμφάνιση-εξαφάνιση κειμένων
+            function playScene(texts, timings, fadeOutTime) {
+                // Καθαρισμός
+                line1.style.opacity = '0'; line2.style.opacity = '0'; line3.style.opacity = '0';
+                line1.innerHTML = ''; line2.innerHTML = ''; line3.innerHTML = '';
+                
+                // Set texts
+                if(texts[0]) line1.innerHTML = texts[0];
+                if(texts[1]) line2.innerHTML = texts[1];
+                if(texts[2]) line3.innerHTML = texts[2];
+
+                // Fades in
+                if(texts[0]) setTimeout(() => { line1.style.opacity = '1'; }, timings[0]);
+                if(texts[1]) setTimeout(() => { line2.style.opacity = '1'; }, timings[1]);
+                if(texts[2]) setTimeout(() => { line3.style.opacity = '1'; }, timings[2]);
+
+                // Fades out all
+                setTimeout(() => {
+                    line1.style.opacity = '0';
+                    line2.style.opacity = '0';
+                    line3.style.opacity = '0';
+                }, fadeOutTime);
+            }
+
+            // Σκηνή 1: 0s - 10s (Διάρκεια 10s)
+            playScene([
+                "Στο διαδίκτυο, πολλές φορές ακόμα και κάποιος που φαίνεται ο πιο έμπιστος, μπορεί να κρύβει παγίδες.",
+                "Ολοκλήρωσες το Swipe Detective, δεν έχει σημασία αν έκανες λάθος ή σωστές επιλογές. Τα πήγες περίφημα.",
+                "Είσαι εδώ για να μάθεις. Εξάλλου, είναι απλώς ένα παιχνίδι!"
+            ], [500, 3500, 6000], 8500);
+
+            // Σκηνή 2: 10s - 18s (Διάρκεια 8s)
+            setTimeout(() => {
+                playScene([
+                    "Το διαδίκτυο είναι ένας υπέροχος, ατελείωτος κόσμος. Ένα μαγικό μέρος για να μαθαίνουμε, να ερευνούμε και να διασκεδάζουμε.",
+                    "Όμως... όπως και στον πραγματικό κόσμο, χρειάζεται προσοχή. Στο διαδίκτυο, δεν είναι όλοι όσοι συναντάμε φίλοι μας."
+                ], [500, 3500], 6500);
+            }, 10000);
+
+            // Σκηνή 3: 18s - 26s (Διάρκεια 8s)
+            setTimeout(() => {
+                playScene([
+                    "Ποτέ μην αποκαλύπτετε το πραγματικό σας όνομα, τη διεύθυνσή σας ή τους κωδικούς σας σε αγνώστους. Ποτέ μη στέλνετε προσωπικές φωτογραφίες σε ανθρώπους που δεν γνωρίζετε.",
+                    "Μιλήστε στους γονείς σας. Μιλήστε στους δασκάλους σας. Δεν είστε ποτέ μόνοι."
+                ], [500, 4000], 6500);
+            }, 18000);
+
+            // Σκηνή 4: 26s - 30s (Διάρκεια 4s)
+            setTimeout(() => {
+                playScene([
+                    "Η ασφάλεια είναι στο χέρι σας. Σερφάρετε έξυπνα. Μείνετε προστατευμένοι."
+                ], [500], 3000);
+            }, 26000);
+
+            // Σκηνή 5: 33s - Τέλος (Απόλυτη παύση 3 δευτερολέπτων μετά την προηγούμενη σκηνή)
+            setTimeout(() => {
+                line1.style.opacity = '0';
+                line2.style.opacity = '0';
+                line3.style.opacity = '0';
+                
+                setTimeout(() => {
+                    line1.innerHTML = "Υπουργείο Παιδείας &amp; Θρησκευμάτων";
+                    line1.style.fontFamily = "'VT323', 'Press Start 2P', monospace";
+                    line1.style.fontSize = "22px"; // Ακόμα πιο μικρό
+                    line1.style.fontWeight = "normal";
+                    line1.style.transition = "opacity 3s ease-in-out"; // Λιγότερο fade in (3 δευτερόλεπτα)
+                    
+                    line2.innerHTML = "";
+                    line3.innerHTML = "";
+                    
+                    // Ομαλή εμφάνιση
+                    line1.style.opacity = '1';
+                }, 100);
+                
+                // Μένει για 9 δευτερόλεπτα (πολύ περισσότερη ώρα) και μετά CRT Off
+                setTimeout(() => {
+                    playCRTClick(); // Παίζει το κλικ κλεισίματος
+                    document.body.classList.add('crt-off');
+                    
+                    // Αφού ολοκληρωθεί το CRT Off, πάμε στο μενού
+                    setTimeout(() => {
+                        window.location.href = "menu.html";
+                    }, 800);
+                }, 9000); 
+            }, 33000);
+        }
+
+        window.onload = () => {
+            setTimeout(() => {
+                typeDialogue(0);
+            }, 1000); 
+        };
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('selectstart', event => event.preventDefault());
+    </script>
+</body>
+</html>

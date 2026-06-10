@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incoming Connection...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #000; 
+            font-family: 'Press Start 2P', cursive; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none; 
+        }
+
+        .scene-area {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .spotlight {
+            position: absolute;
+            width: 320px;
+            height: 80px;
+            background-color: #fcf198; 
+            border-radius: 50%;
+            top: 65%; 
+            z-index: 1;
+        }
+
+        .portrait {
+            width: 220px;
+            height: 250px;
+            /* ΕΔΩ ΕΓΙΝΕ Η ΑΛΛΑΓΗ! Διαβάζει το αρχείο που μόλις έφτιαξες! */
+            background-image: url('img/MAIN_DETECTIVE.png');
+            background-size: contain;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            z-index: 2;
+            position: relative;
+            top: 10%;
+        }
+
+        .talking {
+            animation: talk-bob 0.15s infinite alternate;
+        }
+
+        @keyframes talk-bob {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-6px) scaleY(0.96); } 
+        }
+
+        .text-box-container {
+            height: 25vh; 
+            min-height: 150px;
+            width: 85%; 
+            max-width: 900px;
+            margin: 0 auto 40px auto; 
+            background-color: #fff; 
+            border: 6px solid #ffcc00; 
+            border-radius: 20px; 
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            display: none; 
+            box-shadow: 0px 10px 30px rgba(0,0,0,0.5); 
+        }
+
+        .text-box-container::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 15px 20px 15px;
+            border-style: solid;
+            border-color: transparent transparent #ffcc00 transparent;
+            z-index: 1;
+        }
+        
+        .text-box-container::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 15px 10px;
+            border-style: solid;
+            border-color: transparent transparent #fff transparent;
+            z-index: 2;
+        }
+
+        .text-box {
+            font-size: 1.2rem; 
+            line-height: 2;
+            color: #333; 
+        }
+
+        .next-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 1.2rem;
+            color: #d32f2f; 
+            display: none;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .start-btn {
+            background: #111;
+            border: 4px solid #fff;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            padding: 20px 40px;
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .start-btn:hover {
+            background: #fff;
+            color: #111;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="music/Swipe Noir.mp3" type="audio/mpeg">
+    </audio>
+
+    <button class="start-btn" id="startBtn">START CONNECTION</button>
+
+    <div class="scene-area" id="sceneArea" style="display: none;">
+        <div class="spotlight"></div>
+        <div class="portrait" id="portrait"></div>
+    </div>
+
+    <div class="text-box-container" id="dialogueContainer">
+        <div class="text-box">
+            <span id="textElement"></span>
+        </div>
+        <span class="next-indicator" id="nextIndicator">▼</span>
+    </div>
+
+    <script>
+        const lines = [
+            "Γεια σου. Είμαι ο Επικεφαλής Ντετέκτιβ.",
+            "Χαίρομαι που αποδέχτηκες την πρόσκλησή μου.",
+            "Κατέβασες μια ειδική εφαρμογή που σου δίνει πρόσβαση σε ύποπτα κανάλια του διαδικτύου.",
+            "Η αποστολή σου είναι απλή: εντόπισε κακόβουλα sites, διευθύνσεις και χρήστες που δρουν παράνομα.",
+            "Για κάθε ύποπτη αναφορά που θα σου εμφανιστεί, θα πρέπει να αποφασίσεις.",
+            "Swipe ΔΕΞΙΑ αν θεωρείς ότι είναι ασφαλές.",
+            "Swipe ΑΡΙΣΤΕΡΑ αν εντοπίζεις απάτη ή κίνδυνο.",
+            "Ό,τι εντοπίσεις και αναφέρεις, η ομάδα μας θα αναλάβει από εκεί.",
+            "Καλή τύχη, 'Συνάδελφε'."
+        ];
+
+        let currentLine = 0;
+        let currentChar = 0;
+        let isTyping = false;
+        let typeSpeed = 50; 
+
+        const startBtn = document.getElementById('startBtn');
+        const sceneArea = document.getElementById('sceneArea');
+        const dialogueContainer = document.getElementById('dialogueContainer');
+        const textElement = document.getElementById('textElement');
+        const portrait = document.getElementById('portrait');
+        const nextIndicator = document.getElementById('nextIndicator');
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if(audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playBlip() {
+            if(!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'square'; 
+            oscillator.frequency.setValueAtTime(150 + Math.random() * 20, audioCtx.currentTime); 
+            
+            gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.04);
+        }
+
+        function typeText() {
+            if (currentChar < lines[currentLine].length) {
+                isTyping = true;
+                portrait.classList.add('talking'); 
+                
+                let char = lines[currentLine].charAt(currentChar);
+                textElement.innerHTML += char;
+                
+                if (char !== ' ') {
+                    playBlip();
+                }
+
+                currentChar++;
+                setTimeout(typeText, typeSpeed);
+            } else {
+                isTyping = false;
+                portrait.classList.remove('talking'); 
+                nextIndicator.style.display = 'block';
+            }
+        }
+
+        startBtn.addEventListener('click', () => {
+            initAudio(); 
+            // Εκκίνηση μουσικής με το κλικ (απαιτείται για να μην μπλοκαρίσει ο browser)
+            const bgMusic = document.getElementById('bg-music');
+            bgMusic.volume = 0.6;
+            bgMusic.play().catch(e => console.log('Audio blocked:', e));
+            startBtn.style.display = 'none';
+            sceneArea.style.display = 'flex';
+            dialogueContainer.style.display = 'block';
+            typeText();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'startBtn') return;
+            
+            if (!isTyping && dialogueContainer.style.display === 'block') {
+                nextLine();
+            } else if (isTyping && dialogueContainer.style.display === 'block') {
+                currentChar = lines[currentLine].length;
+                textElement.innerHTML = lines[currentLine];
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && dialogueContainer.style.display === 'block') {
+                if (!isTyping) {
+                    nextLine();
+                } else {
+                    currentChar = lines[currentLine].length;
+                    textElement.innerHTML = lines[currentLine];
+                }
+            }
+        });
+
+        function nextLine() {
+            if (currentLine < lines.length - 1) {
+                currentLine++;
+                currentChar = 0;
+                textElement.innerHTML = '';
+                nextIndicator.style.display = 'none';
+                typeText();
+            } else {
+                proceedToGame();
+            }
+        }
+
+        function proceedToGame() {
+            window.location.href = "index.html"; 
+        }
+    </script>
+</body>
+</html>

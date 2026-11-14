@@ -3,57 +3,59 @@
 <img width="1618" height="913" alt="image" src="https://github.com/user-attachments/assets/489151de-0238-4234-a27c-93a625d67899" />
 
 
-Ένα αλληλεπιδραστικό εκπαιδευτικό παιχνίδι (Serious Game) ευαισθητοποίησης γύρω από την Ψηφιακή Ασφάλεια και την προστασία στο διαδίκτυο. 
+An interactive educational web game (Serious Game) designed to raise awareness about digital safety, cybersecurity, and online threat detection.
 
-Το **Swipe Detective** αναπτύχθηκε στα πλαίσια του μαθήματος *"Διδακτική της Πληροφορικής"* της Σχολής Εφαρμοσμένης Πληροφορικής του **Πανεπιστημίου Μακεδονίας**.
+Developed as an academic project for the course "Didactics of Informatics" in the Department of Applied Informatics at the University of Macedonia.
 
-##  Σχετικά με το Παιχνίδι
+About the Game
 
-Οι παίκτες αναλαμβάνουν τον ρόλο ενός ψηφιακού ντετέκτιβ που αποκτά πρόσβαση σε ένα σύστημα παρακολούθησης του διαδικτύου. Η αποστολή τους; Να εντοπίσουν και να φιλτράρουν κακόβουλο ψηφιακό περιεχόμενο, κάνοντας "Swipe" τις αναφορές που εμφανίζονται στην οθόνη τους.
+Players step into the shoes of a digital detective granted access to an internet surveillance terminal. Their mission: identify, assess, and filter malicious digital content by "Swiping" through suspicious reports that appear on screen.
 
-Το παιχνίδι εστιάζει στην εκπαίδευση (κυρίως παιδιών Ε' και ΣΤ' Δημοτικού) πάνω σε:
-- Αναγνώριση **Phishing** και κακόβουλων Emails.
-- Ασφαλή χρήση των **Social Media** και επικοινωνία με αγνώστους.
-- Προστασία **Προσωπικών Δεδομένων** (Κωδικοί, Διευθύνσεις κ.λπ.).
-- Κριτική αξιολόγηση και διασταύρωση πληροφοριών (Fact-checking).
+Designed primarily for 5th and 6th-grade elementary school students (ages 10–12), the game focuses on educating young users on:
 
-##  Βασικά Χαρακτηριστικά
+Phishing & Malicious Emails: Identifying spoofed sender addresses, suspicious attachments, and fake urgency.
+Social Media Safety: Navigating online interactions safely and identifying suspicious outreach from strangers.
+Personal Data Protection: Guarding sensitive personal details (passwords, home addresses, phone numbers).
+Fact-Checking & Critical Thinking: Cross-referencing claims and verifying information before trusting it.
+Key Features
+Swipe Decision Mechanics: Fast-paced decision-making for incoming reports (Swipe Left = Reject / Fraud, Swipe Right = Approve / Safe).
+In-Game Reference Manual: A desktop knowledge base that players must consult to verify official web addresses, domain legitimacy, and threat indicators.
+Retro Aesthetic & Sound Design: Pixel-art visuals, scanlines, CRT monitor effects, and procedurally generated 8-bit audio creating an immersive noir investigative atmosphere.
+Technologies Used
 
-- **Μηχανισμός Swipe:** Γρήγορες αποφάσεις αξιολόγησης περιεχομένου (Αριστερά = Απόρριψη/Απάτη, Δεξιά = Αποδοχή/Ασφαλές).
-- **In-game Εγχειρίδιο:** Μια βάση δεδομένων ("Εγχειρίδιο") στο εικονικό desktop, που ο παίκτης πρέπει να συμβουλεύεται για να ελέγχει την εγκυρότητα των διευθύνσεων και των πληροφοριών.
-- **Retro Αισθητική & Ήχος:** Pixel-art γραφικά, scanlines, CRT εφέ και procedural 8-bit ήχοι που δημιουργούν μια μοναδική ατμόσφαιρα μυστηρίου.
+The project is 100% client-side and developed exclusively using core web technologies without any external dependencies, frameworks, or databases:
 
-##  Τεχνολογίες Ανάπτυξης
+HTML5 & CSS3: Semantic markup, flexbox/grid layouts, retro CRT shader-style animations, and CSS transitions.
+Vanilla JavaScript: Game loop logic, custom state management, DOM manipulation, and event handling.
+Web Audio API: Procedural synthesis of retro 8-bit sound effects.
+Getting Started (How to Play)
 
-Το project είναι **100% Client-Side** και κατασκευάστηκε χρησιμοποιώντας αποκλειστικά βασικές τεχνολογίες του Web, χωρίς εξαρτήσεις από εξωτερικά frameworks ή βάσεις δεδομένων:
+No web server installation (e.g., Node.js or XAMPP) is required:
 
-- **HTML5** & **CSS3** (Animations, Transitions, Flexbox/Grid)
-- **Vanilla JavaScript** (Game Logic, DOM Manipulation, Timing Events)
-- **Web Audio API** (Διαδικαστική σύνθεση ήχων 8-bit)
+Clone the repository:
+git clone https://github.com/Valeg5/SWIPE-DETECTIVE.git
+Navigate to the project root directory.
+Open menu.html in any modern web browser (Google Chrome recommended).
+(Optional) Press F11 for full-screen mode to get the intended retro CRT experience.
 
-##  Οδηγίες Εκτέλεσης (Πώς να παίξετε)
+Credits
 
-Δεν απαιτείται εγκατάσταση κάποιου server (όπως Node.js ή XAMPP). 
+Development & Design:
 
-1. Κατεβάστε το αποθετήριο: `git clone https://github.com/To-Username-Sou/Swipe-Detective.git`
-2. Πλοηγηθείτε στον φάκελο του project.
-3. Ανοίξτε το αρχείο **`menu.html`** με οποιονδήποτε σύγχρονο web browser (Προτείνεται Google Chrome).
-4. *(Προαιρετικά)* Πατήστε `F11` για προβολή σε πλήρη οθόνη και καλύτερη εμπειρία.
+Valentinos Goudas (ICS23170)
+Thrasyvoulos Vasdavanos (ICS23168)
 
-## Συντελεστές (Credits)
+Course Instructor:
 
-**[ ΑΝΑΠΤΥΞΗ & ΣΧΕΔΙΑΣΜΟΣ ]**
-- Βαλεντίνος Γούδας (ICS23170)
-- Θρασύβουλος Βασδαβάνος (ICS23168)
+Stelios Xinogalos
 
-**[ ΔΙΔΑΣΚΩΝ ]**
-- Στέλιος Ξυνόγαλος
+Original Soundtrack:
 
-**[ ΜΟΥΣΙΚΗ ΥΠΟΚΡΟΥΣΗ ]**
-- Χαράλαμπος Γούδας *(Detective Out!.mp3 & Swipe Noir.mp3)*
+Charalampos Goudas (Detective Out!.mp3 & Swipe Noir.mp3)
 
-**[ ΕΙΚΑΣΤΙΚΑ ]**
-- Τα οπτικά στοιχεία (backgrounds, εικονίδια κ.α.) δημιουργήθηκαν με τη βοήθεια **Generative AI (Gemini)**, προκειμένου να εξυπηρετηθούν οι ανάγκες του εκπαιδευτικού σεναρίου στα πλαίσια της ακαδημαϊκής εργασίας.
+Visual Assets:
+
+Visual elements (backgrounds, icons) were generated with the assistance of Generative AI (Gemini) to support the instructional requirements of the academic scenario.
 
 ---
 *Created exclusively for educational purposes | Informatics Didactics 2026*
